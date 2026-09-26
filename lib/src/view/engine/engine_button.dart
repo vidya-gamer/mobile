@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:lichess_mobile/src/model/common/eval.dart';
@@ -11,22 +12,17 @@ import 'package:lichess_mobile/src/widgets/popover.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A button to toggle engine evaluation and show engine depth.
-class EngineButton extends ConsumerStatefulWidget {
-  const EngineButton({required this.filters, this.onTap, this.savedEval, this.goDeeper});
-
-  final EngineEvaluationFilters filters;
-
-  final ClientEval? savedEval;
-
-  final VoidCallback? onTap;
-
-  final VoidCallback? goDeeper;
-
+class const EngineButton({
+  required final EngineEvaluationFilters filters,
+  final VoidCallback? onTap,
+  final ClientEval? savedEval,
+  final VoidCallback? goDeeper,
+}) extends ConsumerStatefulWidget {
   @override
   ConsumerState<EngineButton> createState() => _EngineButtonState();
 }
 
-class _EngineButtonState extends ConsumerState<EngineButton> {
+class _EngineButtonState() extends ConsumerState<EngineButton> {
   late Color fromChipColor;
   Color? toChipColor;
 
@@ -149,11 +145,49 @@ class _EngineButtonState extends ConsumerState<EngineButton> {
   }
 }
 
-class MicroChipPainter extends CustomPainter {
-  const MicroChipPainter(this.color);
+/// Toggle button for engine evaluation with a guard against concurrent toggles.
+///
+/// Encapsulates the [Builder]+[FutureBuilder] pattern that disables the button while a
+/// toggle request is in flight. Callers differ only in how they compute [filters],
+/// [savedEval], [isEnabled], [onToggle] and [onGoDeeper].
+class const EngineToggleButton({
+  required final EngineEvaluationFilters filters,
+  final ClientEval? savedEval,
+  final bool isEnabled = true,
+  required final Future<void> Function() onToggle,
+  required final VoidCallback onGoDeeper,
+}) extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        Future<void>? toggleFuture;
+        return FutureBuilder(
+          future: toggleFuture,
+          builder: (context, snapshot) {
+            return EngineButton(
+              filters: filters,
+              savedEval: savedEval,
+              onTap: isEnabled && snapshot.connectionState != ConnectionState.waiting
+                  ? () async {
+                      toggleFuture = onToggle();
+                      try {
+                        await toggleFuture;
+                      } finally {
+                        toggleFuture = null;
+                      }
+                    }
+                  : null,
+              goDeeper: onGoDeeper,
+            );
+          },
+        );
+      },
+    );
+  }
+}
 
-  final Color color;
-
+class const MicroChipPainter(final Color color) extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const pinLength = 3.5;
@@ -274,12 +308,10 @@ class MicroChipPainter extends CustomPainter {
   bool shouldRepaint(covariant MicroChipPainter oldDelegate) => color != oldDelegate.color;
 }
 
-class _EnginePopup extends ConsumerWidget {
-  const _EnginePopup({this.goDeeper, required this.filters});
-
-  final VoidCallback? goDeeper;
-  final EngineEvaluationFilters filters;
-
+class const _EnginePopup({
+  final VoidCallback? goDeeper,
+  required final EngineEvaluationFilters filters,
+}) extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (:engine, :engineSpec, currentWork: work, eval: evalStateEval, :isComputing) = ref.watch(

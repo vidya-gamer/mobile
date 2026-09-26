@@ -84,12 +84,10 @@ EngineSlot evaluatorEngineSlotFor(Ref ref, Variant variant, Position position) =
 ///
 /// Only one evaluation runs at a time; a new request takes over from whatever was running ("last
 /// caller wins").
-class PositionEvaluator extends Notifier<EngineEvaluationState> {
-  PositionEvaluator(this.context);
-
+class PositionEvaluator(
   /// What is being evaluated: a game, a study, a puzzle.
-  final EvaluationContext context;
-
+  final EvaluationContext context,
+) extends Notifier<EngineEvaluationState> {
   /// What the UI sees before anything has been asked of the engine.
   static const defaultState = (
     engine: null,
@@ -729,3 +727,22 @@ final engineEvaluationProvider = Provider.autoDispose
 
 /// A type for filtering engine evaluation notifications.
 typedef EngineEvaluationFilters = ({EvaluationContext context, UciPath? path});
+
+typedef EngineGaugeParams = ({
+  bool isLocalEngineAvailable,
+
+  /// Orientation of the board.
+  Side orientation,
+
+  /// Position to evaluate.
+  Position position,
+
+  /// Cached evaluation to display when the current evaluation is not available.
+  ClientEval? savedEval,
+
+  /// Server evaluation to display when the current evaluation and the cached evaluation is not available.
+  ExternalEval? serverEval,
+
+  /// Filters to identify the correct engine evaluation provider instance.
+  EngineEvaluationFilters filters,
+});
