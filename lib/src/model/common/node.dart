@@ -85,45 +85,24 @@ abstract class Node({
 
   /// Selects all nodes on that path.
   Iterable<Node> nodesOn(UciPath path) sync* {
-    UciPath currentPath = path;
-
-    Branch? pickChild(Node node) {
-      final id = currentPath.head;
-      if (id == null) {
-        return null;
-      }
-      return node.childById(id);
-    }
-
-    Node current = this;
-    Node? child;
-
-    yield current;
-
-    while ((child = pickChild(current)) != null) {
-      yield child!;
-      current = child;
-      currentPath = currentPath.tail;
-    }
+    yield this;
+    yield* branchesOn(path);
   }
 
   /// Selects all branches on that path.
   Iterable<Branch> branchesOn(UciPath path) sync* {
-    UciPath currentPath = path;
-
-    Branch? pickChild(Node node) {
-      final id = currentPath.head;
-      if (id == null) {
-        return null;
-      }
-      return node.childById(id);
-    }
-
+    var currentPath = path;
     Node current = this;
-    Branch? child;
 
-    while ((child = pickChild(current)) != null) {
-      yield child!;
+    while (true) {
+      final id = currentPath.head;
+      if (id == null) break;
+
+      final child = current.childById(id);
+      if (child == null) break;
+
+      yield child;
+
       current = child;
       currentPath = currentPath.tail;
     }
@@ -675,21 +654,18 @@ abstract class const ViewNode() {
 
   /// Selects all branches on that path.
   Iterable<ViewBranch> branchesOn(UciPath path) sync* {
-    UciPath currentPath = path;
-
-    ViewBranch? pickChild(ViewNode node) {
-      final id = currentPath.head;
-      if (id == null) {
-        return null;
-      }
-      return node.childById(id);
-    }
-
+    var currentPath = path;
     ViewNode current = this;
-    ViewBranch? child;
 
-    while ((child = pickChild(current)) != null) {
-      yield child!;
+    while (true) {
+      final id = currentPath.head;
+      if (id == null) break;
+
+      final child = current.childById(id);
+      if (child == null) break;
+
+      yield child;
+
       current = child;
       currentPath = currentPath.tail;
     }
