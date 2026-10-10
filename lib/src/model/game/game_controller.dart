@@ -678,6 +678,7 @@ class GameController(final GameFullId gameFullId)
     switch (event.topic) {
       // First message sent when the socket is reconnected
       case 'full':
+      _logger.info('Server requested full');
         final fullEvent = GameFullEvent.fromJson(event.data as Map<String, dynamic>);
         _socketClient.version = fullEvent.socketEventVersion;
 
@@ -723,11 +724,13 @@ class GameController(final GameFullId gameFullId)
 
       // Server asking for a resync
       case 'resync':
+        _logger.info('Server requested resync');
         _onFullReload?.call();
 
       // Server asking for a reload, or in some cases the reload itself contains
       // another topic message
       case 'reload':
+        _logger.info('Server requested reload');
         if (event.data is Map<String, dynamic>) {
           final data = event.data as Map<String, dynamic>;
           if (data['t'] == null) {

@@ -63,7 +63,9 @@ class TvGameController(final TvGameControllerParams params)
 
   @override
   Future<TvGameState> build() {
-    _onReload = ref.invalidateSelf;
+    _onReload = () {
+      unawaited(_reconnect());
+    };
 
     ref.onDispose(() {
       _socketSubscription?.cancel();
@@ -77,15 +79,29 @@ class TvGameController(final TvGameControllerParams params)
 
   @override
   Future<void> onFocusRegained() async {
-    state = AsyncValue.data(await _connectWebsocket());
+    await _reconnect();
   }
 
   @override
   void onForegroundLost() {
     _socketSubscription?.cancel();
   }
+  Future<void> _reconnect() async {
+    if (!ref.mounted) return;
+    try {
+      final newState = await _connectWebsocket();
+      if (ref.mounted) {
+        state = AsyncValue.data(newState);
+      }
+    } catch (e, st) {
+      if (ref.mounted) {
+        state = AsyncValue.error(e, st);
+      }
+    }
+  }
 
   Future<TvGameState> _connectWebsocket() async {
+    final previousState = state.asData?.value;
     final socketClient = ref
         .read(socketPoolProvider)
         .open(
@@ -118,11 +134,25 @@ class TvGameController(final TvGameControllerParams params)
     final fullEvent = GameFullEvent.fromJson(rawFullEvent.data as Map<String, dynamic>);
     socketClient.version = fullEvent.socketEventVersion;
 
+    final int newCursor;
+    if (previousState != null) {
+      final wasAtEnd = previousState.stepCursor >= previousState.game.steps.length - 1;
+      newCursor = wasAtEnd
+          ? fullEvent.game.steps.length - 1
+          : previousState.stepCursor.clamp(0, fullEvent.game.steps.length - 1);
+    } else {
+      newCursor = fullEvent.game.steps.length - 1;
+    }
+    final chatState = _chatEnabled
+        ? (previousState?.chatState ?? await initChat(fullEvent.game.chat))
+        : null;
     return TvGameState(
       game: fullEvent.game,
-      stepCursor: fullEvent.game.steps.length - 1,
-      orientation: params.orientation,
-      chatState: _chatEnabled ? await initChat(fullEvent.game.chat) : null,
+      stepCursor: newCursor,
+      orientation: previousState?.orientation ?? params.orientation,
+      chatState: chatState,
+      nbWatchers: previousState?.nbWatchers ?? 0,
+      watcherNames: previousState?.watcherNames ?? const IList.empty(),
     );
   }
 
