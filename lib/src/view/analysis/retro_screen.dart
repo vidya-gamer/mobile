@@ -14,6 +14,7 @@ import 'package:lichess_mobile/src/model/engine/evaluation_preferences.dart';
 import 'package:lichess_mobile/src/model/engine/position_evaluator.dart';
 import 'package:lichess_mobile/src/model/settings/board_preferences.dart';
 import 'package:lichess_mobile/src/model/settings/general_preferences.dart';
+import 'package:lichess_mobile/src/service/server_analysis_service.dart';
 import 'package:lichess_mobile/src/styles/styles.dart';
 import 'package:lichess_mobile/src/utils/l10n_context.dart';
 import 'package:lichess_mobile/src/utils/navigation.dart';
@@ -47,11 +48,24 @@ class const RetroScreen({required final RetroOptions options, super.key}) extend
         debugPrint('Error loading retro controller for ${options.id}: $error');
         return Scaffold(
           appBar: AppBar(title: AppBarTitleText(context.l10n.learnFromYourMistakes)),
-          body: FullScreenRetryRequest(
-            onRetry: () {
-              ref.invalidate(retroControllerProvider(options));
-            },
-          ),
+          body: switch (error) {
+            final ServerAnalysisRequestException refusal => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  refusal.message,
+                  style: Styles.sectionTitle,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            // The game itself failed to load, which is worth another try.
+            _ => FullScreenRetryRequest(
+              onRetry: () {
+                ref.invalidate(retroControllerProvider(options));
+              },
+            ),
+          },
         );
       case AsyncData(:final value):
         if (value.serverAnalysisAvailable == false) {
@@ -268,9 +282,9 @@ class const _BottomBar(final RetroOptions options) extends ConsumerWidget {
           if (state.feedback != RetroFeedback.done)
             BottomBarButton(
               icon: Icons.play_arrow,
-              // TODO: translate
-              label: 'Next mistake',
+              label: context.l10n.mobileNextMistake,
               showLabel: true,
+              blink: true,
               onTap: ref.read(retroControllerProvider(options).notifier).nextMistake,
             ),
         ],

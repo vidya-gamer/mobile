@@ -14,7 +14,8 @@ import 'package:lichess_mobile/src/model/common/perf.dart';
 import 'package:lichess_mobile/src/model/common/speed.dart';
 import 'package:lichess_mobile/src/model/common/time_increment.dart';
 import 'package:lichess_mobile/src/model/engine/position_evaluator.dart';
-import 'package:lichess_mobile/src/model/engine/weights_service.dart';
+import 'package:lichess_mobile/src/model/engine/practice_analyser.dart';
+import 'package:lichess_mobile/src/model/engine/practice_comment.dart';
 import 'package:lichess_mobile/src/model/game/game.dart';
 import 'package:lichess_mobile/src/model/game/game_status.dart';
 import 'package:lichess_mobile/src/model/game/offline_computer_game.dart';
@@ -24,9 +25,8 @@ import 'package:lichess_mobile/src/model/offline_computer/offline_computer_clock
 import 'package:lichess_mobile/src/model/offline_computer/offline_computer_game_controller.dart';
 import 'package:lichess_mobile/src/model/offline_computer/offline_computer_game_preferences.dart';
 import 'package:lichess_mobile/src/model/offline_computer/offline_computer_game_storage.dart';
-import 'package:lichess_mobile/src/model/offline_computer/practice_analyser.dart';
-import 'package:lichess_mobile/src/model/offline_computer/practice_comment.dart';
 import 'package:lichess_mobile/src/model/settings/preferences_storage.dart';
+import 'package:lichess_mobile/src/service/weights_service.dart';
 import 'package:lichess_mobile/src/styles/lichess_colors.dart';
 import 'package:lichess_mobile/src/utils/navigation.dart';
 import 'package:lichess_mobile/src/view/offline_computer/offline_computer_game_screen.dart';
@@ -40,7 +40,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../binding.dart';
 import '../../model/engine/fake_engine.dart';
-import '../../model/engine/fake_weights_service.dart';
+import '../../service/fake_weights_service.dart';
 import '../../test_helpers.dart';
 import '../../test_provider_scope.dart';
 

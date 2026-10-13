@@ -21,7 +21,8 @@ import 'package:lichess_mobile/src/utils/screen.dart';
 import 'package:lichess_mobile/src/utils/share.dart';
 import 'package:lichess_mobile/src/view/analysis/analysis_screen.dart';
 import 'package:lichess_mobile/src/view/board_editor/board_editor_filters.dart';
-import 'package:lichess_mobile/src/view/board_editor/board_editor_positions.dart';
+import 'package:lichess_mobile/src/view/board_editor/board_editor_positions_screen.dart';
+import 'package:lichess_mobile/src/view/board_editor/board_from_image.dart';
 import 'package:lichess_mobile/src/view/offline_computer/offline_computer_game_screen.dart';
 import 'package:lichess_mobile/src/view/over_the_board/over_the_board_screen.dart';
 import 'package:lichess_mobile/src/view/play/create_challenge_bottom_sheet.dart';
@@ -53,16 +54,9 @@ class const BoardEditorScreen({super.key, final BoardEditorControllerParams? par
           title: context.l10n.boardEditor,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            tooltip: 'FEN',
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => _FenDialog(
-                onFenLoaded: (fen) =>
-                    ref.read(boardEditorControllerProvider(params).notifier).loadFen(fen),
-              ),
-            ),
+          BoardFromImageButton(
+            onPlacementRead: (placement) =>
+                ref.read(boardEditorControllerProvider(params).notifier).loadFen(placement),
           ),
           SemanticIconButton(
             semanticsLabel: context.l10n.mobileSharePositionAsFEN,
@@ -301,8 +295,9 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
                     final notifier = ref.read(editorController.notifier);
                     Navigator.of(context).push(
                       BoardEditorPositionsScreen.buildRoute(
-                        onPositionSelected: (position) => {
-                          notifier.loadFen(position.fen),
+                        params,
+                        onPositionSelected: (String position) => {
+                          notifier.loadFen(position),
                           Navigator.of(context).pop(),
                         },
                       ),
@@ -311,8 +306,7 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
                 ),
               if (editorState.variant == Variant.standard)
                 BottomSheetAction(
-                  // TODO: l10n
-                  makeLabel: (context) => const Text('Challenge from position'),
+                  makeLabel: (context) => Text(context.l10n.mobileChallengeFromPosition),
                   onPressed: () {
                     final authUser = ref.read(authControllerProvider);
                     if (authUser == null) {
@@ -329,7 +323,7 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
                           if (user.id == authUser.user.id) {
                             showSnackBar(
                               context,
-                              'You cannot challenge yourself',
+                              context.l10n.mobileYouCannotChallengeYourself,
                               type: SnackBarType.error,
                             );
                           }
@@ -345,8 +339,7 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
                             },
                           );
                         },
-                        // TODO: l10n
-                        title: const Text('Challenge from position'),
+                        title: Text(context.l10n.mobileChallengeFromPosition),
                       ),
                     );
                   },
@@ -410,7 +403,7 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
           icon: Icons.biotech,
         ),
         BottomBarButton(
-          label: 'Filters',
+          label: context.l10n.mobileFilters,
           onTap: () => showModalBottomSheet<void>(
             context: context,
             builder: (BuildContext context) => BoardEditorFilters(params: params),
@@ -439,73 +432,6 @@ class const _BottomBar(final BoardEditorControllerParams? params) extends Consum
                   .push(OverTheBoardScreen.buildRoute(initialVariant: variant, initialFen: fen)),
         ),
       ],
-    );
-  }
-}
-
-class const _FenDialog({required final void Function(String fen) onFenLoaded})
-    extends StatefulWidget {
-  @override
-  State<_FenDialog> createState() => _FenDialogState();
-}
-
-class _FenDialogState() extends State<_FenDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pasteFromClipboard() async {
-    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text == null || !mounted) return;
-
-    final text = data!.text!.trim();
-    if (text.isEmpty) return;
-
-    _controller.text = text;
-    try {
-      widget.onFenLoaded(_fenToLoad(Setup.parseFen(text)));
-    } on FenException {
-      showSnackBar(context, context.l10n.invalidFen, type: SnackBarType.error);
-    } finally {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-  }
-
-  /// The FEN to load into the editor for [setup].
-  ///
-  /// The position [setup] describes may be illegal: a missing king, the side
-  /// not to move in check, ... It is loaded all the same, as if the pieces had
-  /// been dragged onto the board, so that the user can fix it there.
-  static String _fenToLoad(Setup setup) {
-    try {
-      // Going through a Position drops what cannot be true of the board, such
-      // as an en passant square that no pawn could have created.
-      return Chess.fromSetup(setup).fen;
-    } on PositionSetupException {
-      return setup.fen;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      content: TextField(
-        controller: _controller,
-        readOnly: true,
-        onTap: _pasteFromClipboard,
-        decoration: InputDecoration(
-          hintText: context.l10n.pasteTheFenStringHere,
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.paste),
-            onPressed: _pasteFromClipboard,
-            tooltip: 'Paste from clipboard',
-          ),
-        ),
-      ),
     );
   }
 }
