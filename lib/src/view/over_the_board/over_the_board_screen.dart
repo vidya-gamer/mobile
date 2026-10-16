@@ -25,6 +25,7 @@ import 'package:lichess_mobile/src/view/analysis/analysis_screen.dart';
 import 'package:lichess_mobile/src/view/game/game_player.dart';
 import 'package:lichess_mobile/src/view/game/game_result_dialog.dart';
 import 'package:lichess_mobile/src/view/over_the_board/configure_over_the_board_game.dart';
+import 'package:lichess_mobile/src/view/over_the_board/over_the_board_recent_games_screen.dart';
 import 'package:lichess_mobile/src/widgets/adaptive_action_sheet.dart';
 import 'package:lichess_mobile/src/widgets/bottom_bar.dart';
 import 'package:lichess_mobile/src/widgets/buttons.dart';
@@ -53,6 +54,12 @@ class const OverTheBoardScreen({
       appBar: AppBar(
         title: Text(context.l10n.mobileOverTheBoard),
         actions: [
+          SemanticIconButton(
+            onPressed: () => Navigator.of(context).push(OverTheBoardRecentGamesScreen.buildRoute()),
+            // need to pause clock here
+            semanticsLabel: context.l10n.recentGames,
+            icon: const Icon(Icons.history),
+          ),
           SemanticIconButton(
             onPressed: () => showConfigureDisplaySettings(context),
             semanticsLabel: context.l10n.settingsSettings,
@@ -93,18 +100,21 @@ class _BodyState() extends ConsumerState<_Body> {
         return;
       }
 
-      final ongoingGame = await ref.read(overTheBoardGameStorageProvider).fetchOngoingGame();
-      if (ongoingGame != null && ongoingGame.game.steps.length > 1 && !ongoingGame.game.finished) {
+      final savedGames = await ref.read(overTheBoardGameStorageProvider).fetchGames();
+      final latestGame = savedGames.firstOrNull;
+
+      // Check if the most recent game exists and is unfinished
+      if (latestGame != null && !latestGame.game.finished) {
         ref
             .read(overTheBoardGameControllerProvider.notifier)
-            .loadOngoingGame(ongoingGame.game, ongoingGame.timeIncrement);
+            .loadOngoingGame(latestGame.game, latestGame.timeIncrement);
 
         ref
             .read(overTheBoardClockProvider.notifier)
             .setupClock(
-              ongoingGame.timeIncrement,
-              whiteTimeLeft: ongoingGame.whiteTimeLeft,
-              blackTimeLeft: ongoingGame.blackTimeLeft,
+              latestGame.timeIncrement,
+              whiteTimeLeft: latestGame.whiteTimeLeft,
+              blackTimeLeft: latestGame.blackTimeLeft,
             );
       } else {
         if (!mounted) return;

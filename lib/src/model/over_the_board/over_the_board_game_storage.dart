@@ -31,7 +31,13 @@ final overTheBoardGameStorageProvider = Provider<OverTheBoardGameStorage>((Ref r
   return OverTheBoardGameStorage(ref);
 }, name: 'OverTheBoardGameStorageProvider');
 
-const kOtbGameFileName = 'otb_game.json';
+final savedOtbGamesProvider = FutureProvider.autoDispose<List<SavedOtbGame>>((Ref ref) {
+  final storage = ref.watch(overTheBoardGameStorageProvider);
+  return storage.fetchGames();
+}, name: 'SavedOtbGamesProvider');
+
+const kOtbGameFileName = 'otb_games.json';
+const kMaxSavedGames = 10;
 
 class const OverTheBoardGameStorage(final Ref ref) {
   Future<File> _getFile() async {
@@ -39,29 +45,36 @@ class const OverTheBoardGameStorage(final Ref ref) {
     return File('${dir.path}/$kOtbGameFileName');
   }
 
-  /// Loads an ongoing OTB game from storage. Returns null if there's no ongoing game or if an error occurs.
-  Future<SavedOtbGame?> fetchOngoingGame() async {
+  /// Fetches saved OTB games from storage.
+  /// Returns a list of [SavedOtbGame] ordered from most recent to oldest.
+  Future<List<SavedOtbGame>> fetchGames() async {
     try {
       final file = await _getFile();
       if (!await file.exists()) {
-        return null;
+        return [];
       }
 
       final contents = await file.readAsString();
       final json = jsonDecode(contents);
 
-      if (json is! Map<String, dynamic>) {
-        throw const FormatException('[OtbGameStorage] cannot fetch game: expected an object');
+      if (json is List) {
+        return json.whereType<Map<String, dynamic>>().map(SavedOtbGame.fromJson).toList();
       }
 
-      return SavedOtbGame.fromJson(json);
+      // Migration fallback for existing single-game schema
+      if (json is Map<String, dynamic>) {
+        return [SavedOtbGame.fromJson(json)];
+      }
+
+      throw const FormatException('[OtbGameStorage] cannot fetch games: expected a JSON list');
     } catch (e, st) {
-      _logger.warning('[OtbGameStorage] failed to fetch game:', e, st);
-      return null;
+      _logger.warning('[OtbGameStorage] failed to fetch games:', e, st);
+      return [];
     }
   }
 
-  /// Persist the ongoing OTB game to storage. Use [fetchOngoingGame] to retrieve it later.
+  /// Persist an OTB game to storage. Prepends the game to the list
+  /// and keeps only the 10 most recent games.
   Future<void> save(
     OverTheBoardGame game, {
     required TimeIncrement timeIncrement,
@@ -69,17 +82,19 @@ class const OverTheBoardGameStorage(final Ref ref) {
     required Duration? blackTimeLeft,
   }) async {
     try {
-      final file = await _getFile();
-      await file.writeAsString(
-        jsonEncode(
-          SavedOtbGame(
-            game: game,
-            timeIncrement: timeIncrement,
-            whiteTimeLeft: whiteTimeLeft,
-            blackTimeLeft: blackTimeLeft,
-          ).toJson(),
-        ),
+      final currentGames = await fetchGames();
+
+      final newGame = SavedOtbGame(
+        game: game,
+        timeIncrement: timeIncrement,
+        whiteTimeLeft: whiteTimeLeft,
+        blackTimeLeft: blackTimeLeft,
       );
+
+      final updatedGames = [newGame, ...currentGames].take(kMaxSavedGames).toList();
+
+      final file = await _getFile();
+      await file.writeAsString(jsonEncode(updatedGames.map((g) => g.toJson()).toList()));
     } catch (e, st) {
       _logger.warning('[OtbGameStorage] failed to save game:', e, st);
     }
