@@ -1,11 +1,15 @@
 import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoSlidingSegmentedControl;
-import 'package:lichess_mobile/src/widgets/platform.dart' show useLiquidGlass;
+import 'package:lichess_mobile/src/widgets/platform.dart'
+    show GlassControlBackground, useLiquidGlass;
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
-    show GlassSegment, GlassSegmentedControl;
+    show GlassDefaults, GlassSegment, GlassSegmentedControl;
 import 'package:material_ui/material_ui.dart';
 
 /// A single choice segmented control: a Material [SegmentedButton] on Android, a liquid glass
 /// segmented control on iOS (a plain one before iOS 26).
+///
+/// The iOS control is flat, like the iOS controls in content: the glass control without its glass
+/// background, on the text field fill ([GlassControlBackground]).
 class const PlatformSegmentedControl<T extends Object>({
   super.key,
 
@@ -47,14 +51,20 @@ class const PlatformSegmentedControl<T extends Object>({
     }
 
     if (Theme.of(context).platform == TargetPlatform.iOS) {
+      final control = GlassSegmentedControl(
+        segments: [for (final (_, label) in segments) GlassSegment(label: label)],
+        selectedIndex: segments.indexWhere((segment) => segment.$1 == selected),
+        onSegmentSelected: (index) => onChanged(segments[index].$1),
+        backgroundColor: Colors.transparent,
+        // Shown in a sheet or a page, there is no parent glass layer to share.
+        useOwnLayer: true,
+      );
       return Padding(
         padding: expandedInsets ?? EdgeInsets.zero,
-        child: GlassSegmentedControl(
-          segments: [for (final (_, label) in segments) GlassSegment(label: label)],
-          selectedIndex: segments.indexWhere((segment) => segment.$1 == selected),
-          onSegmentSelected: (index) => onChanged(segments[index].$1),
-          // Shown in a sheet or a page, there is no parent glass layer to share.
-          useOwnLayer: true,
+        child: GlassControlBackground(
+          glass: false,
+          height: GlassDefaults.heightControl,
+          child: control,
         ),
       );
     }
