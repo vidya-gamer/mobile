@@ -1,8 +1,9 @@
-import 'dart:convert';
-
+import 'package:dartchess/dartchess.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lichess_mobile/src/model/common/perf.dart';
 //import 'package:lichess_mobile/src/model/analysis/opening_explorer_mixin.dart';
+import 'package:lichess_mobile/src/model/over_the_board/over_the_board_clock.dart';
+import 'package:lichess_mobile/src/model/over_the_board/over_the_board_game_controller.dart';
 import 'package:lichess_mobile/src/model/over_the_board/over_the_board_game_storage.dart';
 import 'package:lichess_mobile/src/styles/icon_extensions.dart';
 import 'package:lichess_mobile/src/utils/l10n.dart';
@@ -43,9 +44,30 @@ class const OverTheBoardRecentGamesScreen({super.key}) extends ConsumerWidget {
                     : Icon(savedGame.game.meta.perf.icon),
                 title: Text(relativeDate(context.l10n, savedGame.game.meta.createdAt)),
                 subtitle: Text('${context.l10n.timeControl}: ${savedGame.timeIncrement.display}'),
-                trailing: const Icon(Icons.expand_more), // change to game result
+                trailing: Text(
+                  savedGame.game.playable
+                      ? '*'
+                      : savedGame.game.winner == Side.white
+                      ? '1-0'
+                      : savedGame.game.winner == Side.black
+                      ? '0-1'
+                      : '½-½',
+                  style: const TextStyle(fontSize: 18),
+                ),
                 onTap: () {
-                  // load finished game in analysis screen, unfinished in OTB game screen
+                  ref
+                      .read(overTheBoardGameControllerProvider.notifier)
+                      .loadOngoingGame(savedGame.game, savedGame.timeIncrement);
+
+                  ref
+                      .read(overTheBoardClockProvider.notifier)
+                      .setupClock(
+                        savedGame.timeIncrement,
+                        whiteTimeLeft: savedGame.whiteTimeLeft,
+                        blackTimeLeft: savedGame.blackTimeLeft,
+                      );
+                  Navigator.pop(context);
+                  //don't pop up the rematch screen, make the change in OTB_screen, line 150
                 },
               );
             },
