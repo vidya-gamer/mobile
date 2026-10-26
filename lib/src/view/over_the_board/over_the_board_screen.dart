@@ -56,11 +56,17 @@ class const OverTheBoardScreen({
       appBar: PlatformAppBar(
         title: Text(context.l10n.mobileOverTheBoard),
         actions: [
-          SemanticIconButton(
-            onPressed: () => Navigator.of(context).push(OverTheBoardRecentGamesScreen.buildRoute()),
-            // need to pause clock here
-            semanticsLabel: context.l10n.recentGames,
-            icon: const Icon(Icons.history),
+          Consumer(
+            builder: (context, ref, child) {
+              return SemanticIconButton(
+                onPressed: () {
+                  ref.read(overTheBoardClockProvider.notifier).pause();
+                  Navigator.of(context).push(OverTheBoardRecentGamesScreen.buildRoute());
+                },
+                semanticsLabel: context.l10n.recentGames,
+                icon: const Icon(Icons.history),
+              );
+            },
           ),
           SemanticIconButton(
             onPressed: () => showConfigureDisplaySettings(context),

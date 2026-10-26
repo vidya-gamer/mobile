@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lichess_mobile/src/model/common/perf.dart';
+//import 'package:lichess_mobile/src/model/analysis/opening_explorer_mixin.dart';
 import 'package:lichess_mobile/src/model/over_the_board/over_the_board_game_storage.dart';
 import 'package:lichess_mobile/src/styles/icon_extensions.dart';
+import 'package:lichess_mobile/src/utils/l10n.dart';
 import 'package:lichess_mobile/src/utils/l10n_context.dart';
 import 'package:lichess_mobile/src/utils/navigation.dart';
 import 'package:material_ui/material_ui.dart';
@@ -24,7 +26,7 @@ class const OverTheBoardRecentGamesScreen({super.key}) extends ConsumerWidget {
           if (games.isEmpty) {
             return Center(
               child: Text(
-                'No recent games saved.',
+                context.l10n.none,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
             );
@@ -35,26 +37,16 @@ class const OverTheBoardRecentGamesScreen({super.key}) extends ConsumerWidget {
             itemBuilder: (context, index) {
               final savedGame = games[index];
 
-              final jsonString = const JsonEncoder.withIndent('  ').convert(savedGame.toJson());
-
-              return ExpansionTile(
+              return ListTile(
                 leading: savedGame.game.meta.perf == Perf.correspondence
                     ? const Icon(Icons.all_inclusive)
                     : Icon(savedGame.game.meta.perf.icon),
-                title: Text('Game #${index + 1}'),
-                subtitle: Text('Time Control: ${savedGame.timeIncrement}'),
-                trailing: const Icon(Icons.expand_more),
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: SelectableText(
-                      jsonString,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                    ),
-                  ),
-                ],
+                title: Text(relativeDate(context.l10n, savedGame.game.meta.createdAt)),
+                subtitle: Text('${context.l10n.timeControl}: ${savedGame.timeIncrement.display}'),
+                trailing: const Icon(Icons.expand_more), // change to game result
+                onTap: () {
+                  // load finished game in analysis screen, unfinished in OTB game screen
+                },
               );
             },
           );
