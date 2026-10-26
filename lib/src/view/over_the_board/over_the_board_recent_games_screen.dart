@@ -1,7 +1,6 @@
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lichess_mobile/src/model/common/perf.dart';
-//import 'package:lichess_mobile/src/model/analysis/opening_explorer_mixin.dart';
 import 'package:lichess_mobile/src/model/over_the_board/over_the_board_clock.dart';
 import 'package:lichess_mobile/src/model/over_the_board/over_the_board_game_controller.dart';
 import 'package:lichess_mobile/src/model/over_the_board/over_the_board_game_storage.dart';
@@ -67,7 +66,6 @@ class const OverTheBoardRecentGamesScreen({super.key}) extends ConsumerWidget {
                         blackTimeLeft: savedGame.blackTimeLeft,
                       );
                   Navigator.pop(context);
-                  //don't pop up the rematch screen, make the change in OTB_screen, line 150
                 },
               );
             },
