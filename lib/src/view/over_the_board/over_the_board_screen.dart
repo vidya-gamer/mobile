@@ -158,7 +158,7 @@ class _BodyState() extends ConsumerState<_Body> {
     });
 
     ref.listen(overTheBoardGameControllerProvider, (previous, newGameState) {
-      if (previous?.finished == false && newGameState.finished) {
+      if (previous?.finished == false && newGameState.finished && previous?.game.id == newGameState.game.id) {
         ref.read(overTheBoardClockProvider.notifier).pause();
         Timer(const Duration(milliseconds: 500), () {
           if (context.mounted) {
