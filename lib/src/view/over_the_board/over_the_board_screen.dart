@@ -111,8 +111,7 @@ class _BodyState() extends ConsumerState<_Body> {
       final savedGames = await ref.read(overTheBoardGameStorageProvider).fetchGames();
       final latestGame = savedGames.firstOrNull;
 
-      // Check if the most recent game exists and is unfinished
-      if (latestGame != null && !latestGame.game.finished) {
+      if (latestGame != null && latestGame.game.steps.length > 1 && !latestGame.game.finished) {
         ref
             .read(overTheBoardGameControllerProvider.notifier)
             .loadOngoingGame(latestGame.game, latestGame.timeIncrement);
@@ -158,7 +157,9 @@ class _BodyState() extends ConsumerState<_Body> {
     });
 
     ref.listen(overTheBoardGameControllerProvider, (previous, newGameState) {
-      if (previous?.finished == false && newGameState.finished && previous?.game.id == newGameState.game.id) {
+      if (previous?.finished == false &&
+          newGameState.finished &&
+          previous?.game.id == newGameState.game.id) {
         ref.read(overTheBoardClockProvider.notifier).pause();
         Timer(const Duration(milliseconds: 500), () {
           if (context.mounted) {
