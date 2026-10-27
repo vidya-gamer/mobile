@@ -108,20 +108,18 @@ class _BodyState() extends ConsumerState<_Body> {
         return;
       }
 
-      final savedGames = await ref.read(overTheBoardGameStorageProvider).fetchGames();
-      final latestGame = savedGames.firstOrNull;
-
-      if (latestGame != null && latestGame.game.steps.length > 1 && !latestGame.game.finished) {
+      final firstGame = (await ref.read(overTheBoardGameStorageProvider).fetchGames()).firstOrNull;
+      if (firstGame != null && firstGame.game.steps.length > 1 && !firstGame.game.finished) {
         ref
             .read(overTheBoardGameControllerProvider.notifier)
-            .loadOngoingGame(latestGame.game, latestGame.timeIncrement);
+            .loadOngoingGame(firstGame.game, firstGame.timeIncrement);
 
         ref
             .read(overTheBoardClockProvider.notifier)
             .setupClock(
-              latestGame.timeIncrement,
-              whiteTimeLeft: latestGame.whiteTimeLeft,
-              blackTimeLeft: latestGame.blackTimeLeft,
+              firstGame.timeIncrement,
+              whiteTimeLeft: firstGame.whiteTimeLeft,
+              blackTimeLeft: firstGame.blackTimeLeft,
             );
       } else {
         if (!mounted) return;
